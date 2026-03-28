@@ -170,7 +170,7 @@ agentic ai/
 | **Architecture Document** | [`ARCHITECTURE.md`](./ARCHITECTURE.md) | Agent roles, communication flow, error handling, tool integrations |
 | **Impact Model** | [`IMPACT_MODEL.md`](./IMPACT_MODEL.md) | Quantified cost savings (₹2.4 Cr/yr), time saved, revenue recovery |
 | **Source Code** | This repository | Full backend + frontend with setup instructions |
-| **Pitch Video** | See `pitch_video/` or linked | 3-min walkthrough of agent workflow |
+
 
 ## 📜 License
 
