@@ -157,8 +157,7 @@ agentic ai/
 │       ├── index.css              # Design system
 │       ├── components/            # 10 React components
 │       └── hooks/useApi.js        # API integration
-│
-├── ARCHITECTURE.md                # Architecture document
+│ document
 ├── IMPACT_MODEL.md                # Business impact analysis
 └── README.md                      # This file
 ```
@@ -167,12 +166,11 @@ agentic ai/
 
 | Document | File | Description |
 |----------|------|-------------|
-| **Architecture Document** | [`ARCHITECTURE.md`](./ARCHITECTURE.md) | Agent roles, communication flow, error handling, tool integrations |
 | **Impact Model** | [`IMPACT_MODEL.md`](./IMPACT_MODEL.md) | Quantified cost savings (₹2.4 Cr/yr), time saved, revenue recovery |
 | **Source Code** | This repository | Full backend + frontend with setup instructions |
 
 
 ## 📜 License
 
-This project was built as an academic submission for the Multi-Agent AI course.
+This project was built as an interest for the Multi-Agent AI .
 
