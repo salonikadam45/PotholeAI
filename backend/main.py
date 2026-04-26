@@ -167,6 +167,231 @@ def seed_demo_data(count: int = 20):
     }
 
 
+# ─── Heatmap Endpoints ───────────────────────────────────────────────────────
+
+# Simulated geo-coordinates for demo locations
+LOCATION_COORDS = {
+    "Main Street": {"lat": 18.5204, "lng": 73.8567},
+    "Oak Avenue": {"lat": 18.5304, "lng": 73.8467},
+    "Highway 12 Exit Ramp": {"lat": 18.5504, "lng": 73.8267},
+    "Commerce Drive": {"lat": 18.5104, "lng": 73.8767},
+    "Park Road": {"lat": 18.5254, "lng": 73.8517},
+    "5th Street Intersection": {"lat": 18.5354, "lng": 73.8617},
+    "Birch Lane": {"lat": 18.5154, "lng": 73.8417},
+    "Hospital Access Road": {"lat": 18.5404, "lng": 73.8367},
+    "Cedar Street": {"lat": 18.5054, "lng": 73.8667},
+    "Industrial Avenue": {"lat": 18.5454, "lng": 73.8167},
+    "Riverside Drive": {"lat": 18.4954, "lng": 73.8867},
+    "Wellington Road": {"lat": 18.5604, "lng": 73.8067},
+    "Maple Court": {"lat": 18.5174, "lng": 73.8537},
+    "Market Street": {"lat": 18.5224, "lng": 73.8487},
+    "Anderson Boulevard": {"lat": 18.5324, "lng": 73.8387},
+    "Broadway & 3rd": {"lat": 18.5124, "lng": 73.8587},
+    "Block 7 Entrance": {"lat": 18.5274, "lng": 73.8437},
+    "Victoria Lane": {"lat": 18.5374, "lng": 73.8337},
+    "King's Road": {"lat": 18.5074, "lng": 73.8737},
+    "Highway Toll Plaza": {"lat": 18.5554, "lng": 73.8137},
+    "Highway 101, School Zone": {"lat": 18.5424, "lng": 73.8297},
+}
+
+import random
+
+@app.get("/api/heatmap")
+def get_heatmap_data():
+    """Get location-aggregated complaint data for heatmap visualization."""
+    location_data = {}
+    
+    for complaint in orchestrator.complaints.values():
+        loc = complaint.location or (complaint.parsed.extracted_location if complaint.parsed else "Unknown")
+        if not loc or loc == "Location not specified":
+            loc = "Unknown"
+        
+        if loc not in location_data:
+            location_data[loc] = {
+                "location": loc,
+                "complaints": [],
+                "count": 0,
+                "total_severity": 0,
+                "critical_count": 0,
+                "high_count": 0,
+                "medium_count": 0,
+                "low_count": 0,
+                "resolved_count": 0,
+                "active_count": 0,
+                "breached_count": 0,
+            }
+        
+        entry = location_data[loc]
+        entry["count"] += 1
+        entry["complaints"].append(complaint.id)
+        
+        if complaint.severity:
+            entry["total_severity"] += complaint.severity.severity_score
+            level = complaint.severity.severity_level.value
+            if level == "critical":
+                entry["critical_count"] += 1
+            elif level == "high":
+                entry["high_count"] += 1
+            elif level == "medium":
+                entry["medium_count"] += 1
+            else:
+                entry["low_count"] += 1
+        
+        if complaint.status.value == "resolved":
+            entry["resolved_count"] += 1
+        else:
+            entry["active_count"] += 1
+        
+        if complaint.sla and complaint.sla.breached:
+            entry["breached_count"] += 1
+    
+    # Build heatmap points with coordinates
+    heatmap_points = []
+    for loc, data in location_data.items():
+        avg_severity = data["total_severity"] / data["count"] if data["count"] > 0 else 0
+        
+        # Priority score: weighted combination of count, severity, active, breaches
+        priority_score = round(
+            0.3 * min(data["count"] / 5, 1) * 10 +
+            0.35 * avg_severity +
+            0.2 * min(data["active_count"] / 3, 1) * 10 +
+            0.15 * min(data["breached_count"], 3) * 3.3,
+            1
+        )
+        
+        # Get coordinates (use known or generate near default center)
+        coords = LOCATION_COORDS.get(loc)
+        if not coords:
+            # Generate deterministic coords near Pune city center
+            hash_val = hash(loc)
+            coords = {
+                "lat": 18.52 + (hash_val % 100) * 0.001 - 0.05,
+                "lng": 73.85 + (hash_val % 73) * 0.001 - 0.035
+            }
+        
+        heatmap_points.append({
+            "location": loc,
+            "lat": coords["lat"],
+            "lng": coords["lng"],
+            "count": data["count"],
+            "avg_severity": round(avg_severity, 1),
+            "priority_score": priority_score,
+            "critical": data["critical_count"],
+            "high": data["high_count"],
+            "medium": data["medium_count"],
+            "low": data["low_count"],
+            "active": data["active_count"],
+            "resolved": data["resolved_count"],
+            "breached": data["breached_count"],
+            "complaint_ids": data["complaints"],
+        })
+    
+    # Sort by priority score descending
+    heatmap_points.sort(key=lambda x: x["priority_score"], reverse=True)
+    
+    return {
+        "total_locations": len(heatmap_points),
+        "points": heatmap_points,
+        "center": {"lat": 18.5204, "lng": 73.8567},  # Pune center
+        "zoom": 13
+    }
+
+
+# ─── Agent Scorecards ────────────────────────────────────────────────────────
+
+@app.get("/api/agents/scorecards")
+def get_agent_scorecards():
+    """Get per-agent performance scorecards with detailed metrics."""
+    all_complaints = list(orchestrator.complaints.values())
+    audit_entries = orchestrator.audit_logger.get_recent(10000)
+    
+    # Aggregate per-agent metrics from decisions
+    agent_metrics = {
+        "agent-1": {"name": "Intake & Parser", "icon": "📥", "decisions": [], "errors": 0, "corrections": 0},
+        "agent-2": {"name": "Vision & Multimodal AI", "icon": "👁️", "decisions": [], "errors": 0, "corrections": 0},
+        "agent-3": {"name": "Severity Classifier", "icon": "⚖️", "decisions": [], "errors": 0, "corrections": 0},
+        "agent-4": {"name": "Router & Decision Maker", "icon": "🔀", "decisions": [], "errors": 0, "corrections": 0},
+        "agent-5": {"name": "Workflow Monitor", "icon": "📡", "decisions": [], "errors": 0, "corrections": 0},
+    }
+    
+    # Collect decisions from complaints
+    for complaint in all_complaints:
+        for decision in complaint.agent_decisions:
+            agent_id = decision.agent_id
+            if agent_id in agent_metrics:
+                agent_metrics[agent_id]["decisions"].append(decision)
+    
+    # Count errors and corrections from audit log
+    for entry in audit_entries:
+        if entry.action == "agent_error_recovery" and entry.agent_id == "orchestrator":
+            # Extract which agent errored from reasoning
+            for aid in agent_metrics:
+                if aid in entry.reasoning:
+                    agent_metrics[aid]["errors"] += 1
+        if entry.action == "self_correction_triggered":
+            agent_metrics["agent-3"]["corrections"] += 1
+        if entry.action == "cross_validation_failed":
+            agent_metrics["agent-3"]["corrections"] += 1
+        if entry.action == "duplicate_detected":
+            agent_metrics["agent-1"]["corrections"] += 1
+    
+    # Build scorecards
+    scorecards = []
+    for agent_id, metrics in agent_metrics.items():
+        decisions = metrics["decisions"]
+        total = len(decisions)
+        
+        avg_duration = 0
+        avg_confidence = 0
+        high_conf = 0
+        low_conf = 0
+        
+        if total > 0:
+            avg_duration = sum(d.duration_ms for d in decisions) / total
+            avg_confidence = sum(d.confidence for d in decisions) / total
+            high_conf = sum(1 for d in decisions if d.confidence >= 0.7)
+            low_conf = sum(1 for d in decisions if d.confidence < 0.5)
+        
+        error_rate = metrics["errors"] / max(total, 1) * 100
+        
+        # Calculate reliability score (0-100)
+        reliability = min(100, max(0, round(
+            100 - error_rate * 5 + (avg_confidence * 20) + (metrics["corrections"] * 2)
+        )))
+        
+        scorecards.append({
+            "agent_id": agent_id,
+            "name": metrics["name"],
+            "icon": metrics["icon"],
+            "total_processed": total,
+            "avg_duration_ms": round(avg_duration, 1),
+            "avg_confidence": round(avg_confidence, 3),
+            "high_confidence_count": high_conf,
+            "low_confidence_count": low_conf,
+            "error_count": metrics["errors"],
+            "error_rate": round(error_rate, 1),
+            "self_corrections": metrics["corrections"],
+            "reliability_score": reliability,
+            "status": "online",
+        })
+    
+    # Overall system metrics
+    total_decisions = sum(s["total_processed"] for s in scorecards)
+    overall_confidence = sum(s["avg_confidence"] * s["total_processed"] for s in scorecards) / max(total_decisions, 1)
+    
+    return {
+        "scorecards": scorecards,
+        "system_metrics": {
+            "total_decisions": total_decisions,
+            "overall_avg_confidence": round(overall_confidence, 3),
+            "total_errors": orchestrator.total_errors,
+            "total_self_corrections": orchestrator.total_auto_corrected,
+            "total_complaints": len(all_complaints),
+            "autonomous_rate": round((len([c for c in all_complaints if c.retry_count == 0]) / max(len(all_complaints), 1)) * 100, 1),
+        }
+    }
+
+
 # ─── Health Check ─────────────────────────────────────────────────────────────
 
 @app.get("/api/health")

@@ -10,6 +10,9 @@ import DepartmentView from './components/DepartmentView';
 import AuditTrail from './components/AuditTrail';
 import NotificationLog from './components/NotificationLog';
 import ComplaintForm from './components/ComplaintForm';
+import Heatmap from './components/Heatmap';
+import AgentScorecards from './components/AgentScorecards';
+import ComplaintDrawer from './components/ComplaintDrawer';
 
 const TAB_TITLES = {
   overview: { title: 'System Overview', subtitle: 'Real-time pipeline health & KPIs' },
@@ -19,12 +22,15 @@ const TAB_TITLES = {
   departments: { title: 'Departments', subtitle: 'Workload distribution & performance' },
   audit: { title: 'Audit Trail', subtitle: 'Every agent decision logged' },
   notifications: { title: 'Notifications', subtitle: 'Citizen communication log' },
+  heatmap: { title: 'Priority Heatmap', subtitle: 'Location-based reconstruction priorities' },
+  scorecards: { title: 'Agent Scorecards', subtitle: 'Per-agent performance metrics & reliability' },
   submit: { title: 'New Complaint', subtitle: 'Submit multimodal complaint' },
 };
 
 function App() {
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
+  const [drawerComplaintId, setDrawerComplaintId] = useState(null);
   const [data, setData] = useState({
     pipeline: null,
     complaints: null,
@@ -32,18 +38,22 @@ function App() {
     departments: null,
     audit: null,
     notifications: null,
+    heatmap: null,
+    scorecards: null,
   });
 
   const refreshData = useCallback(async () => {
     setLoading(true);
     try {
-      const [pipeline, complaints, sla, departments, audit, notifications] = await Promise.all([
+      const [pipeline, complaints, sla, departments, audit, notifications, heatmap, scorecards] = await Promise.all([
         api.getPipelineStatus(),
         api.getComplaints(),
         api.getSlaBreaches(),
         api.getDepartments(),
         api.getAuditLog(100),
         api.getNotifications(50),
+        api.getHeatmap(),
+        api.getAgentScorecards(),
       ]);
 
       setData({
@@ -53,6 +63,8 @@ function App() {
         departments: departments?.departments || [],
         audit,
         notifications,
+        heatmap,
+        scorecards,
       });
     } catch (err) {
       console.error('Failed to refresh data:', err);
@@ -144,7 +156,7 @@ function App() {
               {/* ═══ Complaints Tab ═══ */}
               {activeTab === 'complaints' && (
                 <div className="animate-fade-in">
-                  <ComplaintsFeed complaints={data.complaints} />
+                  <ComplaintsFeed complaints={data.complaints} onComplaintClick={setDrawerComplaintId} />
                 </div>
               )}
 
@@ -176,6 +188,20 @@ function App() {
                 </div>
               )}
 
+              {/* ═══ Heatmap Tab ═══ */}
+              {activeTab === 'heatmap' && (
+                <div className="animate-fade-in">
+                  <Heatmap heatmapData={data.heatmap} />
+                </div>
+              )}
+
+              {/* ═══ Scorecards Tab ═══ */}
+              {activeTab === 'scorecards' && (
+                <div className="animate-fade-in">
+                  <AgentScorecards scorecardData={data.scorecards} />
+                </div>
+              )}
+
               {/* ═══ Submit Tab ═══ */}
               {activeTab === 'submit' && (
                 <div className="animate-fade-in">
@@ -186,6 +212,14 @@ function App() {
           )}
         </div>
       </div>
+
+      {/* Complaint Detail Drawer */}
+      {drawerComplaintId && (
+        <ComplaintDrawer
+          complaintId={drawerComplaintId}
+          onClose={() => setDrawerComplaintId(null)}
+        />
+      )}
     </div>
   );
 }

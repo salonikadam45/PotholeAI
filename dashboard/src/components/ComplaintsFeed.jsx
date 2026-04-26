@@ -24,7 +24,8 @@ function getStatusBadge(status) {
   </span>;
 }
 
-export default function ComplaintsFeed({ complaints, onSelectComplaint }) {
+export default function ComplaintsFeed({ complaints, onSelectComplaint, onComplaintClick }) {
+  const handleClick = onComplaintClick || onSelectComplaint;
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   
@@ -59,7 +60,7 @@ export default function ComplaintsFeed({ complaints, onSelectComplaint }) {
       <div className="section-header">
         <h2 className="section-title">📋 Complaints Feed</h2>
         <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-          {filtered.length} of {complaints.length}
+          {filtered.length} of {complaints.length} — click any row to view details
         </span>
       </div>
 
@@ -100,7 +101,7 @@ export default function ComplaintsFeed({ complaints, onSelectComplaint }) {
           <tbody>
             {filtered.map(c => (
               <tr key={c.id} style={{ cursor: 'pointer' }}
-                  onClick={() => onSelectComplaint && onSelectComplaint(c.id)}>
+                  onClick={() => handleClick && handleClick(c.id)}>
                 <td className="primary" style={{ color: 'var(--accent-cyan)', fontFamily: 'monospace' }}>
                   {c.id}
                 </td>

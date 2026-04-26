@@ -112,7 +112,8 @@ class ProcessOrchestrator:
                 text_input=complaint.text_input,
                 image_data=complaint.image_data,
                 audio_data=complaint.audio_data,
-                location_hint=complaint.location
+                location_hint=complaint.location,
+                existing_complaints=list(self.complaints.values())
             ),
             complaint
         )

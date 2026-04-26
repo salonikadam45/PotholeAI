@@ -2,7 +2,7 @@
  * API hooks for communicating with the FastAPI backend.
  */
 
-const API_BASE = 'http://localhost:8001/api';
+const API_BASE = 'http://localhost:8000/api';
 
 async function fetchJSON(url, options = {}) {
   try {
@@ -58,4 +58,10 @@ export const api = {
 
   // Health
   getHealth: () => fetchJSON('/health'),
+
+  // Heatmap
+  getHeatmap: () => fetchJSON('/heatmap'),
+
+  // Agent Scorecards
+  getAgentScorecards: () => fetchJSON('/agents/scorecards'),
 };

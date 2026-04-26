@@ -1,0 +1,225 @@
+/* ─── Heatmap Styles ─────────────────────────────────────────────────────── */
+
+.heatmap-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 20px;
+}
+
+@media (max-width: 1100px) {
+  .heatmap-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.heatmap-card {
+  padding: 20px;
+}
+
+.heatmap-container {
+  height: 500px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  margin-bottom: 12px;
+}
+
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 8px 0;
+}
+
+.legend-entry {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.legend-circle {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.legend-circle.critical { background: #ef4444; box-shadow: 0 0 8px rgba(239, 68, 68, 0.4); }
+.legend-circle.high { background: #f59e0b; box-shadow: 0 0 8px rgba(245, 158, 11, 0.4); }
+.legend-circle.medium { background: #00d4ff; box-shadow: 0 0 8px rgba(0, 212, 255, 0.4); }
+.legend-circle.low { background: #10b981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.4); }
+
+/* Priority zone cards */
+.priority-zone-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: 1px solid transparent;
+  margin-bottom: 6px;
+}
+
+.priority-zone-card:hover {
+  background: rgba(0, 212, 255, 0.04);
+  border-color: var(--border-subtle);
+}
+
+.priority-zone-card.selected {
+  background: rgba(0, 212, 255, 0.08);
+  border-color: var(--accent-cyan);
+}
+
+.zone-rank {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.zone-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.zone-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.zone-meta {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  display: flex;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.zone-breakdown {
+  display: flex;
+  gap: 4px;
+  margin-top: 3px;
+}
+
+.zone-tag {
+  font-size: 0.62rem;
+  padding: 1px 5px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.zone-tag.critical { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+.zone-tag.high { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+.zone-tag.breached { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
+.zone-score {
+  font-size: 1.3rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+/* Zone detail */
+.zone-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.zone-detail-stat {
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.zone-detail-value {
+  font-size: 1.1rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.zone-detail-label {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-top: 2px;
+}
+
+/* Priority bar in table */
+.priority-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.priority-bar-bg {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+  overflow: hidden;
+  min-width: 60px;
+}
+
+.priority-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width var(--transition-smooth);
+}
+
+/* Rank badge */
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.rank-top {
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  color: #fff;
+}
+
+.rank-normal {
+  background: rgba(148, 163, 184, 0.1);
+  color: var(--text-secondary);
+}
+
+/* Selected row */
+.row-selected td {
+  background: rgba(0, 212, 255, 0.06) !important;
+}
+
+/* Leaflet dark popup override */
+.dark-popup .leaflet-popup-content-wrapper {
+  background: #1a1f35;
+  color: #f1f5f9;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.dark-popup .leaflet-popup-tip {
+  background: #1a1f35;
+}

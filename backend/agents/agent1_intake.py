@@ -60,7 +60,8 @@ class IntakeParserAgent:
     AGENT_NAME = "Intake & Parser"
     
     def process(self, text_input: str = "", image_data: str = None, 
-                audio_data: str = None, location_hint: str = "") -> tuple[ParsedComplaint, AgentDecision, list[AuditLogEntry]]:
+                audio_data: str = None, location_hint: str = "",
+                existing_complaints: list = None) -> tuple[ParsedComplaint, AgentDecision, list[AuditLogEntry]]:
         """
         Process raw complaint input and return structured data.
         Returns: (ParsedComplaint, AgentDecision, list of AuditLogEntries)
@@ -123,6 +124,21 @@ class IntakeParserAgent:
         complaint_type = self._classify_type(combined_text)
         urgency_kws = self._extract_urgency(combined_text)
         
+        # ── Step 4: Duplicate Detection ────────────────────────────────
+        
+        duplicate_of = None
+        is_duplicate = False
+        if existing_complaints:
+            duplicate_of = self._detect_duplicate(
+                extracted_location, complaint_type, combined_text, existing_complaints
+            )
+            if duplicate_of:
+                is_duplicate = True
+                audit_entries.append(self._audit("duplicate_detected",
+                    f"Location '{extracted_location}' matches existing complaint(s)",
+                    f"Potential duplicate of: {', '.join(duplicate_of)}. Flagging as recurrence.",
+                    ""))
+        
         duration_ms = int((time.time() - start_time) * 1000)
         
         parsed = ParsedComplaint(
@@ -138,23 +154,79 @@ class IntakeParserAgent:
         
         confidence = self._calculate_confidence(parsed)
         
+        dup_note = ""
+        if is_duplicate:
+            dup_note = f" | DUPLICATE of {', '.join(duplicate_of)}"
+        
         decision = AgentDecision(
             agent_id=self.AGENT_ID,
             agent_name=self.AGENT_NAME,
             input_summary=f"Modalities: {[m.value for m in modalities]} | Text length: {len(combined_text)}",
-            output_summary=f"Type: {complaint_type} | Location: {extracted_location} | Urgency keywords: {len(urgency_kws)}",
+            output_summary=f"Type: {complaint_type} | Location: {extracted_location} | Urgency keywords: {len(urgency_kws)}{dup_note}",
             confidence=confidence,
             duration_ms=duration_ms,
             reasoning=f"Parsed {len(modalities)} input modalities. Extracted location='{extracted_location}', "
                       f"type='{complaint_type}', found {len(urgency_kws)} urgency indicators."
+                      f"{' Duplicate detected — marking as recurrence for priority boost.' if is_duplicate else ''}"
         )
         
         audit_entries.append(self._audit("parsing_complete",
             f"Processed {len(modalities)} modalities",
-            f"Structured output ready. Confidence: {confidence:.2f}",
+            f"Structured output ready. Confidence: {confidence:.2f}{dup_note}",
             ""))
         
         return parsed, decision, audit_entries
+    
+    def _detect_duplicate(self, location: str, complaint_type: str, 
+                          text: str, existing_complaints: list) -> list[str]:
+        """
+        Detect if this complaint is a duplicate/recurrence of an existing one.
+        Uses location fuzzy matching + complaint type matching.
+        Returns list of matching complaint IDs.
+        """
+        matches = []
+        loc_lower = location.lower().strip()
+        text_lower = text.lower()
+        
+        for complaint in existing_complaints:
+            # Check location match
+            existing_loc = ""
+            if complaint.location:
+                existing_loc = complaint.location.lower().strip()
+            elif complaint.parsed and complaint.parsed.extracted_location:
+                existing_loc = complaint.parsed.extracted_location.lower().strip()
+            
+            if not existing_loc or existing_loc == "location not specified":
+                continue
+            
+            # Fuzzy location matching
+            loc_match = False
+            if loc_lower == existing_loc:
+                loc_match = True
+            elif loc_lower in existing_loc or existing_loc in loc_lower:
+                loc_match = True
+            else:
+                # Word overlap check (>60% shared words = likely same location)
+                loc_words = set(loc_lower.split())
+                existing_words = set(existing_loc.split())
+                if loc_words and existing_words:
+                    overlap = len(loc_words & existing_words) / max(len(loc_words), len(existing_words))
+                    if overlap > 0.6:
+                        loc_match = True
+            
+            if loc_match:
+                # Also check text similarity (basic keyword overlap)
+                if complaint.text_input:
+                    existing_text = complaint.text_input.lower()
+                    text_words = set(text_lower.split())
+                    existing_text_words = set(existing_text.split())
+                    common = len(text_words & existing_text_words)
+                    if common >= 3:  # at least 3 shared words
+                        matches.append(complaint.id)
+                else:
+                    matches.append(complaint.id)
+        
+        return matches[:3]  # Return max 3 matches
     
     def _extract_location(self, text: str, hint: str) -> str:
         """Extract location from text using regex patterns."""

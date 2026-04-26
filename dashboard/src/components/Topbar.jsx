@@ -9,9 +9,7 @@ export default function Topbar({ title, subtitle, onSeedData, onHealthCheck }) {
         {subtitle && <span className="topbar-subtitle">{subtitle}</span>}
       </div>
       <div className="topbar-right">
-        <button className="btn btn-ghost topbar-btn" onClick={onHealthCheck} id="btn-health-check">
-          🩺 Health Check
-        </button>
+
         <button className="btn btn-primary topbar-btn" onClick={onSeedData} id="btn-seed-data">
           ⚡ Seed Demo Data
         </button>

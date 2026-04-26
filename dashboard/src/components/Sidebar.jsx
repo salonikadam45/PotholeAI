@@ -5,9 +5,11 @@ const NAV_ITEMS = [
   { id: 'overview', icon: '📊', label: 'Overview' },
   { id: 'pipeline', icon: '🔗', label: 'Agent Pipeline' },
   { id: 'complaints', icon: '📋', label: 'Complaints Feed' },
+  { id: 'heatmap', icon: '🗺️', label: 'Priority Heatmap' },
   { id: 'sla', icon: '⚠️', label: 'SLA Tracker' },
   { id: 'departments', icon: '🏢', label: 'Departments' },
   { id: 'audit', icon: '📝', label: 'Audit Trail' },
+  { id: 'scorecards', icon: '🏆', label: 'Agent Scorecards' },
   { id: 'notifications', icon: '🔔', label: 'Notifications' },
   { id: 'submit', icon: '➕', label: 'New Complaint' },
 ];
@@ -27,7 +29,7 @@ export default function Sidebar({ activeTab, onTabChange }) {
 
       <nav className="sidebar-nav">
         <div className="nav-section-label">Dashboard</div>
-        {NAV_ITEMS.slice(0, 3).map(item => (
+        {NAV_ITEMS.slice(0, 4).map(item => (
           <button
             key={item.id}
             id={`nav-${item.id}`}
@@ -40,7 +42,7 @@ export default function Sidebar({ activeTab, onTabChange }) {
         ))}
 
         <div className="nav-section-label">Monitoring</div>
-        {NAV_ITEMS.slice(3, 6).map(item => (
+        {NAV_ITEMS.slice(4, 8).map(item => (
           <button
             key={item.id}
             id={`nav-${item.id}`}
@@ -53,7 +55,7 @@ export default function Sidebar({ activeTab, onTabChange }) {
         ))}
 
         <div className="nav-section-label">Actions</div>
-        {NAV_ITEMS.slice(6).map(item => (
+        {NAV_ITEMS.slice(8).map(item => (
           <button
             key={item.id}
             id={`nav-${item.id}`}
